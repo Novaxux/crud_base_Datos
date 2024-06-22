@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu principal</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <style>
+    .container {
+      margin-top: 20px;
+    }
+    .product-image {
+      width: 50px;
+      height: 50px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="inicio.html">Mi Sistema</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="#"><strong>Productos</strong></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="clientes.html">Clientes</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Ventas</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Reportes</a>
+        </li>
+      </ul>
+    </div>
+    <span class="navbar-text">
+      <script>
+        const userData = JSON.parse(localStorage.getItem('authUser'));
+        document.write(`Bienvenido, ${userData.usuario}`);
+      </script>
+    </span>
+  </nav>
+
+  <div class="container">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <input type="text" id="searchInput" class="form-control" placeholder="Buscar productos por nombre o descripción">
+      </div>
+      <div class="col-md-6 text-right">
+        <button class="btn btn-primary" data-toggle="modal" data-target="#productModal">Agregar Producto</button>
+      </div>
+    </div>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Imagen</th>
+          <th>Descripción</th>
+          <th>Precio</th>
+          <th>Cantidad</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="productTableBody">
+        <!-- Productos serán cargados aquí dinámicamente -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal para agregar/editar producto -->
+  <div class="modal fade" id="productModal" tabindex="-1" role="dialog" aria-labelledby="productModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="productModalLabel">Agregar Producto</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="productForm">
+            <input type="hidden" id="productId">
+            <div class="form-group">
+              <label for="productName">Nombre</label>
+              <input type="text" class="form-control" id="productName" required>
+            </div>
+            <div class="form-group">
+              <label for="productDescription">Descripción</label>
+              <textarea class="form-control" id="productDescription" required></textarea>
+            </div>
+            <div class="form-group">
+              <label for="productQuantity">Cantidad</label>
+              <input type="number" class="form-control" id="productQuantity" required>
+            </div>
+            <div class="form-group">
+              <label for="productPrice">Precio Venta</label>
+              <input type="number" class="form-control" id="productPrice" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="productPrice">Precio Costo</label>
+                <input type="number" class="form-control" id="productPriceC" step="0.01" required>
+              </div>
+            <div class="form-group">
+              <label for="productImage">URL Imagen</label>
+              <input type="text" class="form-control" id="productImage" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para confirmar eliminación -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel">Eliminar Producto</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>¿Está seguro que desea eliminar este producto?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" id="confirmDelete">Sí, eliminar</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">No, cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+  <script>
+    const apiBaseUrl = 'http://localhost/poo1/tienda.php';
+
+    $(document).ready(function() {
+      let selectedProductId = null;
+      
+
+      // Cargar productos al cargar la página
+      loadProducts();
+
+      // Buscar productos
+      $('#searchInput').on('input', function() {
+        const searchQuery = $(this).val().toLowerCase();
+        filterProducts(searchQuery);
+      });
+
+      // Limpiar el formulario al abrir el modal
+      $('#productModal').on('show.bs.modal', function () {
+       
+        if($(".modal-title#productModalLabel").text()!=='Editar Producto'){
+            clearForm();
+            $('#productModalLabel').text('Agregar Producto'); // Asegurarse de que el título sea "Agregar Producto"
+        }
+          });
+
+          // accion de cancelar modal
+      $('#productModal').on('hide.bs.modal', function () {
+       
+            $('#productModalLabel').text('Agregar Producto'); // Asegurarse de que el título sea "Agregar Producto"
+        
+          });
+
+      // Manejar formulario de agregar/editar producto
+      $('#productForm').on('submit', function(event) {
+        event.preventDefault();
+       
+        const productData = {
+          id: $('#productId').val(),
+          nombre: $('#productName').val(),
+          descripcion: $('#productDescription').val(),
+          cantidad: $('#productQuantity').val(),
+          precioCosto: $('#productPriceC').val(),
+          precioVenta: $('#productPrice').val(),
+          url_foto: $('#productImage').val()
+        };
+        if (productData.id) {
+           
+          editProduct(productData);
+         
+        } else {
+           
+          addProduct(productData);
+        }
+        
+        clearForm();
+      });
+
+      // Manejar botón de eliminación
+      $('#confirmDelete').on('click', function() {
+        if (selectedProductId) {
+          deleteProduct(selectedProductId);
+        }
+      });
+
+      // Función para limpiar el formulario
+function clearForm() {
+    $('#productId').val('');
+    $('#productName').val('');
+    $('#productDescription').val('');
+    $('#productQuantity').val('');
+    $('#productPriceC').val('');
+    $('#productPrice').val('');
+    $('#productImage').val('');
+}
+      // Funciones
+      function loadProducts() {
+        const userId = JSON.parse(localStorage.getItem('authUser')).id;
+        //const userId = JSON.parse(localStorage.getItem('authUser')).id;
+        $.ajax({
+          url: `${apiBaseUrl}?accion=obtenerProductos&id_usuario=${userId}`,
+          method: 'GET',
+          success: function(response) {
+            const products = JSON.parse(response);
+            displayProducts(products);
+          }
+        });
+      }
+
+      function displayProducts(products) {
+        const tableBody = $('#productTableBody');
+        tableBody.empty();
+        products.forEach(product => {
+          const productRow = `<tr>
+            <td><img src="${product.url_foto}" class="product-image" alt="${product.nombre}"></td>
+            <td>${product.descripcion}</td>
+            <td>${product.precio_venta}</td>
+            <td>${product.cantidad}</td>
+            <td>
+              <button class="btn btn-warning btn-sm" onclick="openEditModal(${product.id})">Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${product.id})">Eliminar</button>
+            </td>
+          </tr>`;
+          tableBody.append(productRow);
+        });
+      }
+
+      function filterProducts(query) {
+        $('#productTableBody tr').filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(query) > -1);
+        });
+      }
+
+      function addProduct(productData) {
+        
+        $.ajax({
+          url: `${apiBaseUrl}?accion=agregarProducto`,
+          method: 'GET',
+          data: {
+            ...productData,
+            idUsuario: JSON.parse(localStorage.getItem('authUser')).id
+          },
+          success: function(response) {
+            $('#productModal').modal('hide');
+            loadProducts();
+          }
+        });
+      }
+
+      function editProduct(productData) {
+        
+        $.ajax({
+            url: `${apiBaseUrl}?accion=editarProducto`,
+          method: 'GET',
+          data: productData,
+          success: function(response) {
+            $('#productModal').modal('hide');
+            loadProducts();
+          }
+        });
+      }
+
+      function deleteProduct(productId) {
+        $.ajax({
+          url: `${apiBaseUrl}?accion=eliminarProducto&idProducto=${productId}`,
+          method: 'GET',
+          success: function(response) {
+            $('#deleteModal').modal('hide');
+            loadProducts();
+          }
+        });
+      }
+
+      // Abrir modal para editar producto
+      window.openEditModal = function(productId) {
+        selectedProductId = productId;
+       
+        $.ajax({
+          url: `${apiBaseUrl}?accion=obtenerProducto&idProducto=${productId}`,
+          method: 'GET',
+          success: function(response) {
+            const product = JSON.parse(response);
+           
+            $('#productId').val(product.id);
+            $('#productName').val(product.nombre);
+            $('#productDescription').val(product.descripcion);
+            $('#productQuantity').val(product.cantidad);
+            $('#productPrice').val(product.precio_venta);
+            $('#productPriceC').val(product.precio_costo);
+            $('#productImage').val(product.url_foto);
+            $('#productModalLabel').text('Editar Producto');
+            $('#productModal').modal('show');
+          }
+        });
+      };
+
+      // Abrir modal para confirmar eliminación de producto
+      window.openDeleteModal = function(productId) {
+        selectedProductId = productId;
+        $('#deleteModal').modal('show');
+      };
+    });
+  </script>
+</body>
+</html>
+

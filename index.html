@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicación de Autenticación</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Iniciar Sesión</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="loginForm">
+                            <div class="form-group">
+                                <label for="username">Usuario</label>
+                                <input type="text" class="form-control" id="username" placeholder="Ingrese su usuario">
+                            </div>
+                            <div class="form-group">
+                                <label for="password">Contraseña</label>
+                                <input type="password" class="form-control" id="password" placeholder="Ingrese su contraseña">
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">Recordar usuario</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+                            <a href="register.html" class="btn btn-link">Registrarse</a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    // Cargar datos del localStorage
+    const storedUsername = localStorage.getItem('username');
+    const storedPassword = localStorage.getItem('password');
+
+    if (storedUsername && storedPassword) {
+        document.getElementById('username').value = storedUsername;
+        document.getElementById('password').value = storedPassword;
+        document.getElementById('rememberMe').checked = true;
+    }
+
+    // Manejar el envío del formulario de inicio de sesión
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
+
+        // Llamar a la API de inicio de sesión
+        fetch('http://localhost/poo1/login.php?usuario=' + encodeURIComponent(username) + '&contrasena=' + encodeURIComponent(password))
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.data)
+                if (data.status === 'ok') {
+                    // Inicio de sesión exitoso
+                    if (rememberMe) {
+                        // Almacenar usuario y contraseña en localStorage
+                        localStorage.setItem('username', username);
+                        localStorage.setItem('password', password);
+                    } else {
+                        // Eliminar usuario y contraseña del localStorage
+                        localStorage.removeItem('username');
+                        localStorage.removeItem('password');
+                    }
+                    //alert('Inicio de sesión exitoso');
+                    // Redirigir a una página protegida o realizar alguna acción adicional
+                    // Almacena los datos del usuario en el Almacenamiento Web
+                    localStorage.setItem('authUser', JSON.stringify(data.data));
+                    // Redirige al usuario a la página de inicio
+                    window.location.href = 'inicio.html';
+                } else {
+                    // Inicio de sesión fallido
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error al llamar a la API de inicio de sesión');
+                console.error('Error:', error);
+            });
+    });
+
+   
+});
+    </script>
+</body>
+</html>

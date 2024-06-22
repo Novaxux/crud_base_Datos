@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu principal</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <style>
+    .container {
+      margin-top: 20px;
+    }
+    .client-image {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      object-position: center;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+      box-shadow: 0px 0px 10px #ccc;
+    }
+
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="inicio.html">Mi Sistema</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="productos.html">Productos</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="clientes.html"><strong>Clientes</strong></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Ventas</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Reportes</a>
+        </li>
+      </ul>
+    </div>
+    <span class="navbar-text">
+      <script>
+        const userData = JSON.parse(localStorage.getItem('authUser'));
+        document.write(`Bienvenido, ${userData.usuario}`);
+      </script>
+    </span>
+  </nav>
+
+  <div class="container">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <input type="text" id="searchInput" class="form-control" placeholder="Buscar clientes por nombre, dirección o correo">
+      </div>
+      <div class="col-md-6 text-right">
+        <button class="btn btn-primary" data-toggle="modal" data-target="#clientModal">Agregar Cliente</button>
+      </div>
+    </div>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Imagen</th>
+          <th>Nombre</th>
+          <th>Dirección</th>
+          <th>Teléfono</th>
+          <th>Correo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="clientTableBody">
+        <!-- Clientes serán cargados aquí dinámicamente -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal para agregar/editar cliente -->
+  <div class="modal fade" id="clientModal" tabindex="-1" role="dialog" aria-labelledby="clientModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="clientModalLabel">Agregar Cliente</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="clientForm">
+            <input type="hidden" id="clientId">
+            <div class="form-group">
+              <label for="clientName">Nombre</label>
+              <input type="text" class="form-control" id="clientName" required>
+            </div>
+            <div class="form-group">
+              <label for="clientAddress">Dirección</label>
+              <input type="text" class="form-control" id="clientAddress" required>
+            </div>
+            <div class="form-group">
+              <label for="clientPhone">Teléfono</label>
+              <input type="text" class="form-control" id="clientPhone" required>
+            </div>
+            <div class="form-group">
+              <label for="clientEmail">Correo</label>
+              <input type="email" class="form-control" id="clientEmail" required>
+            </div>
+            <div class="form-group">
+              <label for="clientImage">URL Imagen</label>
+              <input type="text" class="form-control" id="clientImage" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para confirmar eliminación -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel">Eliminar Cliente</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>¿Está seguro que desea eliminar este cliente?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" id="confirmDelete">Sí, eliminar</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">No, cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+  <script>
+    const apiBaseUrl = 'http://localhost/poo1/clientes.php';
+
+    $(document).ready(function() {
+      let selectedClientId = null;
+
+      // Cargar clientes al cargar la página
+      loadClients();
+
+      // Buscar clientes
+      $('#searchInput').on('input', function() {
+        const searchQuery = $(this).val().toLowerCase();
+        filterClients(searchQuery);
+      });
+
+      // Limpiar el formulario al abrir el modal
+      $('#clientModal').on('show.bs.modal', function () {
+        if($(".modal-title#clientModalLabel").text()!=='Editar Cliente'){
+            clearForm();
+            $('#clientModalLabel').text('Agregar Cliente'); // Asegurarse de que el título sea "Agregar Cliente"
+        }
+      });
+
+      // Manejar formulario de agregar/editar cliente
+      $('#clientForm').on('submit', function(event) {
+        event.preventDefault();
+        const clientData = {
+          id: $('#clientId').val(),
+          nombre: $('#clientName').val(),
+          direccion: $('#clientAddress').val(),
+          telefono: $('#clientPhone').val(),
+          correo: $('#clientEmail').val(),
+          url_foto: $('#clientImage').val()
+        };
+        if (clientData.id) {
+          editClient(clientData);
+        } else {
+          addClient(clientData);
+        }
+        clearForm();
+      });
+
+      // Manejar botón de eliminación
+      $('#confirmDelete').on('click', function() {
+        if (selectedClientId) {
+          deleteClient(selectedClientId);
+        }
+      });
+
+      // Función para limpiar el formulario
+      function clearForm() {
+        $('#clientId').val('');
+        $('#clientName').val('');
+        $('#clientAddress').val('');
+        $('#clientPhone').val('');
+        $('#clientEmail').val('');
+        $('#clientImage').val('');
+      }
+
+      // Funciones
+      function loadClients() {
+        const userId = JSON.parse(localStorage.getItem('authUser')).id;
+        $.ajax({
+          url: `${apiBaseUrl}?accion=obtenerClientes&id_usuario=${userId}`,
+          method: 'GET',
+          success: function(response) {
+            const clients = JSON.parse(response);
+            displayClients(clients);
+          }
+        });
+      }
+
+      function displayClients(clients) {
+        const tableBody = $('#clientTableBody');
+        tableBody.empty();
+        clients.forEach(client => {
+          const clientRow = `<tr>
+            <td><img src="${client.url_foto}" class="client-image" alt="${client.nombre}"></td>
+            <td>${client.nombre}</td>
+            <td>${client.direccion}</td>
+            <td>${client.telefono}</td>
+            <td>${client.correo}</td>
+            <td>
+              <button class="btn btn-warning btn-sm" onclick="openEditModal(${client.id})">Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${client.id})">Eliminar</button>
+            </td>
+          </tr>`;
+          tableBody.append(clientRow);
+        });
+      }
+
+      function filterClients(query) {
+        $('#clientTableBody tr').filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(query) > -1);
+        });
+      }
+
+      function addClient(clientData) {
+        $.ajax({
+          url: `${apiBaseUrl}?accion=agregarCliente`,
+          method: 'GET',
+          data: {
+            ...clientData,
+            idUsuario: JSON.parse(localStorage.getItem('authUser')).id
+          },
+          success: function(response) {
+            $('#clientModal').modal('hide');
+            loadClients();
+          }
+        });
+      }
+
+      function editClient(clientData) {
+        $.ajax({
+          url: `${apiBaseUrl}?accion=editarCliente`,
+          method: 'GET',
+          data: clientData,
+          success: function(response) {
+            $('#clientModal').modal('hide');
+            loadClients();
+          }
+        });
+      }
+
+      function deleteClient(clientId) {
+        $.ajax({
+          url: `${apiBaseUrl}?accion=eliminarCliente&idCliente=${clientId}`,
+          method: 'GET',
+          success: function(response) {
+            $('#deleteModal').modal('hide');
+            loadClients();
+          }
+        });
+      }
+
+      // Abrir modal para editar cliente
+      window.openEditModal = function(clientId) {
+        selectedClientId = clientId;
+        $.ajax({
+          url: `${apiBaseUrl}?accion=obtenerCliente&idCliente=${clientId}`,
+          method: 'GET',
+          success: function(response) {
+            const client = JSON.parse(response);
+            $('#clientId').val(client.id);
+            $('#clientName').val(client.nombre);
+            $('#clientAddress').val(client.direccion);
+            $('#clientPhone').val(client.telefono);
+            $('#clientEmail').val(client.correo);
+            $('#clientImage').val(client.url_foto);
+            $('#clientModalLabel').text('Editar Cliente');
+            $('#clientModal').modal('show');
+          }
+        });
+      };
+
+      // Abrir modal para confirmar eliminación de cliente
+      window.openDeleteModal = function(clientId) {
+        selectedClientId = clientId;
+        $('#deleteModal').modal('show');
+      };
+    });
+  </script>
+</body>
+</html>
